@@ -4,7 +4,7 @@
 // Responsabilidade: apenas conectar. Nada mais.
 // ============================================================
 
-require_once './sistema/constantes.php';
+require './constantes.php';
 
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
