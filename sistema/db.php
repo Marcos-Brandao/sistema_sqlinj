@@ -4,6 +4,8 @@
 // Responsabilidade: apenas conectar. Nada mais.
 // ============================================================
 
-$conn = mysqli_connect('localhost', 'root', 'MeuBanco@2025', 'teste');
+require_once './sistema/constantes.php';
 
-$pdo  = new PDO("mysql:host=localhost;dbname=teste", "root", "MeuBanco@2025");
+$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+
+$pdo  = new PDO("mysql:host=localhost;dbname=teste", DB_USER, DB_PASS);
